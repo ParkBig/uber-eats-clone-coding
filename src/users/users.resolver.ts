@@ -4,11 +4,11 @@ import { UseGuards } from "@nestjs/common";
 import { LoginInput, LoginOutput } from "./dtos/login.dto";
 import { User } from "./entities/user.entity";
 import { UsersService } from "./users.service";
-import { AuthGuard } from "src/auth/auth.guard";
 import { AuthUser } from "src/auth/auth-user.decorator";
 import { UserProfileInput, UserProfileOutput } from "./dtos/user-profile.dto";
 import { EditProfileInput, EditProfileOutput } from "./dtos/edit-profile.dto";
 import { VerifyEmailInput, VerityEmailOutput } from "./dtos/verify-email.dto";
+import { Role } from "src/auth/role.decoreator";
 
 @Resolver(of => User)
 export class UsersResolver {
@@ -17,39 +17,37 @@ export class UsersResolver {
   // Queries ~>
 
   @Query(returns => User)
-  @UseGuards(AuthGuard)
+  @Role(['Any'])  // 이것이 metadata를 데코레이션으로 만들어쓴거고 이걸한다는건 Authentication을 고려한다는 것.
   me(@AuthUser() authUser: User) {  // @AuthUser() authUser은 request의 헤더즈에 담긴 토큰값을 가지고 지가 알아서 판별한후 authUser에 값을 담아줌
-    // 토큰을 가지고 검증한후 작동한다.
     return authUser;
   }
 
   @Query(returns => UserProfileOutput)
-  @UseGuards(AuthGuard)
-  async userProfile(@Args() userProfileInput: UserProfileInput): Promise<UserProfileOutput> {
+  @Role(['Any'])  // @UseGuards(AuthGuard) 토큰을 가지고 검증한후 작동한다. 옆의 Role로 업그레이드
+  userProfile(@Args() userProfileInput: UserProfileInput): Promise<UserProfileOutput> {
     return this.userService.findById(userProfileInput.userId);
   }
 
   // Mutations ~>
 
-  @Mutation(returns => CreateAccountOutput) // 와 미쳤다.ㅋㅋ 입력값만 받아서 처리한 후 결과값으로 에러 혹은 성공알려줌
-  async createAccount(@Args("input") createAccountInput: CreateAccountInput): Promise<CreateAccountOutput> {  
+  @Mutation(returns => CreateAccountOutput)
+  createAccount(@Args("input") createAccountInput: CreateAccountInput): Promise<CreateAccountOutput> {  
     return this.userService.createAccount(createAccountInput);
   }
 
   @Mutation(returns => LoginOutput)
-  async login(@Args("input") loginInput: LoginInput): Promise<LoginOutput> {
+  login(@Args("input") loginInput: LoginInput): Promise<LoginOutput> {
     return this.userService.login(loginInput);
   }
 
   @Mutation(returns => EditProfileOutput)
-  @UseGuards(AuthGuard)
-  async editProfile(@AuthUser() authUser: User, @Args("input") editProfileInput: EditProfileInput): Promise<EditProfileOutput> {
-    // 토큰을 가지고 검증한후 작동한다.
+  @Role(['Any'])
+  editProfile(@AuthUser() authUser: User, @Args("input") editProfileInput: EditProfileInput): Promise<EditProfileOutput> {
     return this.userService.editProfile(authUser.id, editProfileInput);
   }
 
   @Mutation(returns => VerityEmailOutput)
-  async verifyEmail(@Args("input") verifyEmailInput: VerifyEmailInput): Promise<VerityEmailOutput> {
+  verifyEmail(@Args("input") verifyEmailInput: VerifyEmailInput): Promise<VerityEmailOutput> {
     return this.userService.verifyEmail(verifyEmailInput.code);
   }
 }

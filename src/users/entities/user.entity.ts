@@ -1,20 +1,23 @@
 import { Field, InputType, ObjectType, registerEnumType } from "@nestjs/graphql";
 import { CommonEntity } from "src/common/entities/common.entities";
-import { BeforeInsert, BeforeUpdate, Column, Entity } from "typeorm";
+import { BeforeInsert, BeforeUpdate, Column, Entity, OneToMany } from "typeorm";
 import * as bcrypt from "bcrypt";
 import { InternalServerErrorException } from "@nestjs/common";
 import { IsBoolean, IsEmail, IsEnum, IsString } from "class-validator";
+import { Restaurant } from "src/restaurants/entities/restaurant.entity";
+import { Order } from "src/orders/entities/order.entity";
+import { Payment } from "src/payments/entities/payment.entity";
 
-enum UserRole {
-  Client,       // 0
-  Owner,        // 1
-  Delivery      // 2
+export enum UserRole {
+  Client = "Client",
+  Owner = "Owner",
+  Delivery = "Delivery"
 }
 
 registerEnumType(UserRole, { name: "UserRole" })
 
-@InputType({ isAbstract: true })
-@ObjectType()
+@InputType("UserInputType", { isAbstract: true }) // 그래프큐엘 입력할떄 그 인풋값으로 쓸 수 있게하는거다 (input: {})
+@ObjectType() // 그래프큐엘 데이터 받아오는 형식 즉 받아올수 있는 것들, 이걸 해줘야 요청시에 데이터 받아올수 있음 
 @Entity()
 export class User extends CommonEntity {
 
@@ -37,6 +40,27 @@ export class User extends CommonEntity {
   @Column({ default: false })
   @IsBoolean()
   verified: boolean;
+
+
+  // 원투 매니 ~>
+
+  @Field(type => [Restaurant])
+  @OneToMany(type => Restaurant, restaurant => restaurant.owner)
+  restaurants: Restaurant[];
+  
+  @Field(type => [Order])
+  @OneToMany(type => Order, orders => orders.customer)
+  orders: Order[];
+
+  @Field(type => [Order])
+  @OneToMany(type => Order, orders => orders.driver)
+  rides: Order[];
+
+  @Field(type => [Payment])
+  @OneToMany(type => Payment, payment => payment.user, { eager: true })
+  payments: Payment[];
+
+  // 여타 로직 ~>
 
   @BeforeInsert() // 유저 서비스에서 this.users.save 하기전에 작동.
   @BeforeUpdate() // 유저 서비스에서 this.users.update 하기전에 작동.

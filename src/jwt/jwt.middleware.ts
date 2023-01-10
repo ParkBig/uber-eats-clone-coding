@@ -25,6 +25,8 @@ export class JwtMiddleware implements NestMiddleware {
   }
 }
 
+// ws 쓰기때문에 이 프젝에선 이파일을 안쓴다. 하지만 http만 사용할떄는 app.module에 미들웨서 사용 추가하고 쓰면된다.
+
 // 함수형으로 할떄 버젼
 // export function jwtMiddleware(req: Request, res: Response, next: NextFunction) {
 //   console.log(req.headers);
